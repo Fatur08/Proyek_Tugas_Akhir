@@ -88,21 +88,41 @@
     }
 
     function successCallback(position) {
-        lokasi.value = position.coords.latitude + "," + position.coords.longitude;
+        // Titik Lokasi User
+        //lokasi.value = position.coords.latitude + "," + position.coords.longitude;
+        // Lokasi Rumah
         //lokasi.value = -5.73632746239753 + "," + 105.59125199541869;
-        var map = L.map('map').setView([position.coords.latitude, position.coords.longitude], 28);
-        //var map = L.map('map').setView([-5.73632746239753, 105.59125199541869], 28);
+        // Lokasi Random Percobaan
+        lokasi.value = -5.735794676409324 + "," + 105.59106872021204;
+        
+        // Tampilan peta yang akan ditampilkan oleh user berdasarkan titik lokasi user
+        //var map = L.map('map').setView([position.coords.latitude, position.coords.longitude], 28);
+        var map = L.map('map').setView([-5.73632746239753, 105.59125199541869], 28);
+
+        // Titik lokasi kantor
         var lokasi_kantor = "{{ $lok_kantor->lokasi_kantor }}";
         var lok = lokasi_kantor.split(",");
         var lat_kantor = lok[0];
         var long_kantor = lok[1];
+
+
+        // Tampilan zoom peta yang akan ditampilkan kepada user
         var radius = "{{ $lok_kantor->radius }}"
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
-        var marker = L.marker([position.coords.latitude, position.coords.longitude]).addTo(map);
+
+
+        // Marker / Penanda Lokasi user berdasarkan titik koordinatnya
+        //var marker = L.marker([position.coords.latitude, position.coords.longitude]).addTo(map);
+        // Lokasi Rumah
         //var marker = L.marker([-5.73632746239753, 105.59125199541869]).addTo(map);
+        // Lokasi Random Percobaan
+        var marker = L.marker([-5.735794676409324, 105.59106872021204]).addTo(map);
+
+
+        // Radius Lingkaran / lingkup area untuk melakukan presensi
         //var circle = L.circle([-5.73632746239753, 105.59125199541869], {
         //var circle = L.circle([position.coords.latitude, position.coords.longitude], {
         var circle = L.circle([lat_kantor, long_kantor], {
