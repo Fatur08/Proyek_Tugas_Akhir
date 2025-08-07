@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pengajuanizin;
+use App\Models\Murid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 
 class PresensiController extends Controller
 {
@@ -24,6 +27,16 @@ class PresensiController extends Controller
     public function store(Request $request)
     {
         $nisn = Auth::guard('murid')->user()->nisn;
+        $murid = DB::table('murid')->where('nisn', $nisn)->first(); // Ambil data murid berdasarkan NISN
+
+        if (!$murid || !$murid->no_hp) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Nomor HP orang tua tidak ditemukan untuk murid ini.'
+            ], 404);
+        }
+
+        $noHpOrangTua = $murid->no_hp; // Nomor HP orang tua murid
         $tgl_presensi = date("Y-m-d");
         $jam = date("H:i:s");
         $lok_kantor = DB::table('konfigurasi_lokasi')->where('id',1)->first();
@@ -69,6 +82,8 @@ class PresensiController extends Controller
                 ];
                 $update = DB::table('presensi')->where('tgl_presensi', $tgl_presensi)->where('nisn', $nisn)->update($data_pulang);
                 if($update){
+                    // Kirim notifikasi WhatsApp untuk presensi pulang
+                    $this->sendWhatsAppNotification($noHpOrangTua, "Murid Anda telah pulang pada {$jam}. Terima kasih!");
                     echo "success|Terimakasi, Hati Hati Di Jalan Pulang|out";
                     Storage::put($file,$image_base64);
                 } else {
@@ -84,6 +99,8 @@ class PresensiController extends Controller
                 ];
                 $simpan = DB::table('presensi')->insert($data);
                 if($simpan){
+                    // Kirim notifikasi WhatsApp untuk presensi masuk
+                    $this->sendWhatsAppNotification($noHpOrangTua, "Lemak Anda telah hadir di sekolah pada {$jam}. Selamat belajar!");
                     echo "success|Terimakasi, Selamat Belajar Di Kelas|in";
                     Storage::put($file,$image_base64);
                 } else {
@@ -91,6 +108,23 @@ class PresensiController extends Controller
                 }
             }   
         }
+    }
+
+        /**
+     * Fungsi untuk mengirim notifikasi WhatsApp.
+     */
+    private function sendWhatsAppNotification($target, $message)
+    {
+        $response = Http::withHeaders([
+            'Authorization' => '8Xj94HfAUG6LakYdwfN5', // Token API Fonnte Anda
+        ])->withOptions([
+            'verify' => storage_path('app/cacert.pem'), // Lokasi file cacert.pem
+        ])->post('https://api.fonnte.com/send', [
+            'target' => $target, // Nomor HP tujuan
+            'message' => $message, // Pesan notifikasi
+        ]);
+
+        return $response->successful();
     }
 
     // Menghitung Jarak
